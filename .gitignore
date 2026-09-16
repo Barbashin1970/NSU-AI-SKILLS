@@ -1,0 +1,10 @@
+# Черновики и рабочие материалы — в репозиторий не кладём.
+_chernoviki/
+_zamery/
+**/SPEC.md
+**/PLAN.md
+
+# Мусор операционных систем
+.DS_Store
+Thumbs.db
+desktop.ini
