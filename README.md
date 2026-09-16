@@ -171,9 +171,61 @@ chmod +x install.sh && ./install.sh
 **Вручную:** скопируйте каталоги из `skills/` в `~/.claude/skills/` (Claude Code)
 и/или `~/.agents/skills/` (Codex). Сборки нет — навык это папка с файлом `SKILL.md`.
 
-> Устройство репозитория и сценарии установки повторяют
-> [apple-design-skills](https://github.com/) (MIT): раскладка `skills/<имя>/SKILL.md`
-> плюс `references/`, установка ссылками сразу в два каталога агентов.
+> Устройство репозитория и сценарии установки повторяют пакет **apple-design-skills**
+> (MIT): раскладка `skills/<имя>/SKILL.md` плюс `references/`, установка ссылками
+> сразу в два каталога агентов.
+
+## Как проверить, что установилось
+
+Четыре проверки, по возрастанию убедительности. Первые три — минута.
+
+**1. Ссылки на месте и ведут в репозиторий:**
+
+```bash
+ls -l ~/.claude/skills | grep gost-19        # восемь строк со стрелками → …/gost-19-skills/skills/…
+ls -l ~/.agents/skills | grep skicoding      # если пользуетесь Codex
+```
+
+Симлинк, ведущий «в никуда» (красный в выводе `ls`), означает, что репозиторий
+переехал: переустановите.
+
+**2. Навык читается целиком:**
+
+```bash
+head -5 ~/.claude/skills/gost-19/SKILL.md    # шапка с name и description
+ls ~/.claude/skills/gost-19-primery/komplekt-arhi | wc -l   # 12
+```
+
+**3. Агент видит навык.** Перезапустите Claude Code и спросите прямо:
+
+> Какие навыки про ГОСТ 19 тебе доступны? Перечисли имена и скажи, для чего каждый.
+
+Ответ обязан назвать восемь имён. Если названо меньше — агент не перечитал каталог
+навыков: перезапустите ещё раз.
+
+**4. Навык срабатывает сам.** Это главная проверка: навык полезен не тогда, когда
+его видно в списке, а когда агент берёт его **без напоминания**. Задайте вопрос,
+не называя навыков:
+
+> Мне нужно написать руководство оператора по ГОСТ 19.505-79 для нашего сервиса.
+> С чего начать?
+
+Признаки, что сработало: агент называет разделы по стандарту, предлагает посмотреть
+образец, **задаёт вопросы о том, что ожидалось**, и не начинает писать текст сразу.
+Если вместо этого пошёл сочинять документ — навык не подхватился либо его описание
+не совпало с вашей формулировкой; скажите «используй навык `gost-19-dokumenty`»
+и посмотрите, изменится ли ответ.
+
+**Проверка самого репозитория** (если правите навыки): ссылки между справками должны
+сходиться — каждый файл, упомянутый в тексте, существует. Быстрый способ:
+
+```bash
+cd ~/gost-19-skills
+grep -rhoE '`[a-z0-9-]+/references/[a-z0-9-]+\.md`' skills | tr -d '`' | sort -u | \
+  while read p; do [ -f "skills/$p" ] || echo "нет файла: $p"; done
+```
+
+Пустой вывод — всё сходится.
 
 ## Как начать
 
@@ -204,7 +256,7 @@ chmod +x install.sh && ./install.sh
 
 ## Откуда это взялось
 
-Навыки собраны на живой работе двух проектов Центра искусственного интеллекта НГУ.
+Навыки собраны на живой работе трёх проектов Центра искусственного интеллекта НГУ.
 
 **Порядок работы** (ски-кодинг) сформулирован 23.05.2026 в проекте РАГРАФ — по факту
 восьми с лишним итераций работы соло-разработчика с большой моделью. Здесь он обобщён
@@ -213,7 +265,8 @@ chmod +x install.sh && ./install.sh
 **Комплект документации** — одиннадцать документов ЕСПД к изделию для управления
 строительными проектами (2026 год). Он писался вместе с изделием по тому же порядку,
 печатался, проходил внутреннюю приёмку и правился по её замечаниям. Отсюда и перечень
-граблей.
+граблей. В образцах он лежит двенадцатью файлами: задание представлено двумя
+редакциями.
 
 **Комплекты опубликованы целиком** — в навыке `gost-19-primery` их три, к трём разным
 изделиям: платформа контроля регламентов (12 документов, два из них — две редакции
@@ -260,15 +313,19 @@ standards and document-type codes, designations and editions, what belongs insid
 document, making every number verifiable against the repository (inventories, checksums,
 guard tests, a pre-delivery ritual), typesetting and printing to PDF (what CSS Paged
 Media can and cannot do in browsers as of late 2026, and the docx route), and the
-test-programme / traceability side of acceptance. Includes a **complete real document
-set** as a worked example.
+test-programme / traceability side of acceptance. Includes **three complete real
+document sets** (27 documents, anonymised) as worked examples.
 
 **`skicoding` (one skill)** — the working order that keeps code, documents and backlog
-in step: a seven-action step, where the backlog lives, how architecture decisions and
-project constraints are recorded, and an **interview mode** — the agent asks the
+in step: text and code steps alternating like ski tracks (analysis before any code
+change, phases, backlog, decisions, constraints), where the backlog lives, how
+architecture decisions and project constraints are recorded, and an **interview mode** — the agent asks the
 programmer what was *expected* (code only shows what the program *does*) and turns the
 answers into use cases, which then drive both the requirements and the acceptance tests.
 Two modes: incremental (project in development) and retrofit (working project, no docs).
+It also maps the family against **spec-driven development** (Spec Kit, OpenSpec, Kiro,
+BMAD): what is borrowed — EARS requirement patterns among others — and what answers
+the standing criticism that specs drift away from code within days.
 
 The material is in **Russian**, because GOST 19 is a Russian-language standard family
 and so is every document produced under it. Skill descriptions carry English keywords
