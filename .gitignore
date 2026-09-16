@@ -8,3 +8,7 @@ _zamery/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Исходники PDF: в них ещё не обезличенные данные — в репозиторий не кладём.
+*.pdf
+_ishodniki/
