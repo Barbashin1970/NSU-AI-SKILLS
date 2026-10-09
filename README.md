@@ -152,7 +152,7 @@ cd $env:USERPROFILE\NSU-AI-SKILLS
 | Навык | Архив | Файлов | Размер |
 |---|---|---|---|
 | порядок работы с агентом | `skicoding.zip` | 11 | 40 КБ |
-| отбор проверок | `otbor-proverok.zip` | 7 | 54 КБ |
+| отбор проверок | `otbor-proverok.zip` | 7 | 55 КБ |
 | хаб ЕСПД | `gost-19.zip` | 4 | 16 КБ |
 | состав комплекта | `gost-19-komplekt.zip` | 2 | 7 КБ |
 | что внутри документа | `gost-19-dokumenty.zip` | 4 | 17 КБ |
