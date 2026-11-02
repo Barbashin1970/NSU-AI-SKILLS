@@ -131,6 +131,7 @@ cd $env:USERPROFILE\NSU-AI-SKILLS
 | **Codex** | `~/.agents/skills/` | установщик кладёт сам; если ваша версия навыков не читает — см. строку ниже |
 | **Любой другой агент** (Copilot, Windsurf, свой) | своего каталога может не быть | добавьте в файл правил проекта (`AGENTS.md`, `CLAUDE.md`, `.cursorrules`) строку: «порядок работы и требования к документации — в `~/NSU-AI-SKILLS/skills/`, читай оттуда `SKILL.md` нужного навыка» |
 | **Windows** | `%USERPROFILE%\.claude\skills\` | `install.ps1` делает junction-каталоги; права администратора не нужны |
+| **claude.ai** и приложение Claude | в учётной записи, не на диске | загрузить архив из `zip/claude/` — раздел ниже |
 
 **Вручную, если установщик не подошёл:** скопируйте папки из `skills/`
 в `~/.claude/skills/` и/или `~/.agents/skills/`. Разница только в том, что копии
@@ -159,17 +160,30 @@ cd $env:USERPROFILE\NSU-AI-SKILLS
 | числа и сторожа | `gost-19-sverka.zip` | 4 | 11 КБ |
 | оформление и печать | `gost-19-pechat.zip` | 4 | 12 КБ |
 | приёмка | `gost-19-priyomka.zip` | 4 | 12 КБ |
-| живые образцы ЕСПД | `gost-19-primery.zip` | 31 | 758 КБ |
-| НИОКР с образцами | `niokr.zip` | 24 | 603 КБ |
+| живые образцы ЕСПД | `gost-19-primery.zip` | 35 | 820 КБ |
+| НИОКР с образцами | `niokr.zip` | 24 | 604 КБ |
 
 Числа получены `./soberi-zip.sh`; он же пересобирает каталог после правки навыков.
+Правили навык — пересоберите архивы в том же коммите: 02.11.2026 выяснилось, что архивы
+`gost-19-primery` и `gost-19-priyomka` отстали от навыков на правку 27.10.2026.
+
+**claude.ai и приложение Claude — другие архивы, из [zip/claude/](zip/claude/).** Архивы
+выше устроены под Perplexity: `SKILL.md` лежит в корне. claude.ai такой архив не примет —
+ему нужна папка навыка в корне архива, а в шапке — только поля `name`, `description`,
+`license`, `compatibility`, `metadata`, `allowed-tools`; на `when_to_use` загрузка падает
+с «Unexpected key(s) in SKILL.md frontmatter». Сценарий собирает для Claude отдельный
+архив каждого навыка: папка в корне, `when_to_use` вырезан (в исходнике он остаётся —
+Claude Code по нему отбирает навык). Загрузка: включить **Settings → Capabilities →
+Code execution and file creation**, затем **Customize → Skills → «+» → Create skill →
+Upload a skill**. Все десять архивов прошли валидатор Anthropic `quick_validate.py`
+(навык skill-creator) 02.11.2026.
 
 **Пределы приёмной стороны и как пакет под них уложен.** У Perplexity их три,
 и каждый со своей повадкой:
 
 | Предел | Как выполнен |
 |---|---|
-| 100 файлов на архив | самый крупный архив — 31 файл |
+| 100 файлов на архив | самый крупный архив — 35 файлов |
 | 5 файлов за отправку | это предел **одной отправки**, а не пространства: десять навыков грузятся двумя заходами |
 | 1024 в `description` | **считается в БАЙТАХ**, а кириллица в UTF-8 весит два байта на букву — русское описание упирается в предел вдвое раньше, около 512 знаков |
 
@@ -179,8 +193,9 @@ cd $env:USERPROFILE\NSU-AI-SKILLS
 **Как уложились, ничего не выбросив.** Описание каждого навыка укорочено до предела,
 а хвост ключевых слов переехал в поле `when_to_use`. Claude учитывает это поле при
 отборе навыка наравне с описанием (общий предел там 1536 **знаков**, и он не задет),
-а приёмная сторона его просто не читает. Ни одно ключевое слово не потеряно, и текст
-живёт в одном месте — подменять описания при сборке больше не нужно.
+а Perplexity его просто не читает. Ни одно ключевое слово не потеряно, и текст
+живёт в одном месте — подменять описания при сборке больше не нужно. Оговорка: claude.ai
+это поле не допускает, поэтому из архивов для Claude сценарий его вырезает (см. выше).
 
 **Архив мышью не собирать.** «Сжать» в Finder кладёт в архив всю папку целиком —
 вместе с `.git/` и `_ishodniki/` (**необезличенные** PDF: наименования сторон, фамилии
@@ -495,5 +510,10 @@ its terms of reference and the report on the same work.
 The material is in **Russian**, because GOST 19 is a Russian-language standard family
 and so is every document produced under it. Skill descriptions carry English keywords
 so an agent routes correctly regardless of the prompt language.
+
+Install: `install.sh` / `install.ps1` link the skills into `~/.claude/skills` and
+`~/.agents/skills`. Ready archives: `zip/<skill>.zip` (SKILL.md at the root — Perplexity,
+any chat) and `zip/claude/<skill>.zip` (skill folder at the root, `when_to_use` removed —
+claude.ai, the Claude app and the Skills API: **Customize → Skills → + → Upload a skill**).
 
 Licence: MIT (see `LICENSE`).

@@ -7,8 +7,17 @@
 # Скачивающему с GitHub собирать ничего не нужно: он берёт нужный zip прямо
 # со страницы репозитория и грузит в свою среду.
 #
-# Один навык — один архив, SKILL.md в корне архива. Описания навыков уже уложены
-# в 1024 БАЙТА, поэтому подменять здесь нечего: что в репозитории, то и в архиве.
+# Один навык — два архива:
+#   zip/<навык>.zip         SKILL.md в корне архива — Perplexity и любой чат; что в
+#                           репозитории, то и в архиве (описания уже уложены в 1024 БАЙТА);
+#   zip/claude/<навык>.zip  папка навыка в корне архива и шапка без when_to_use —
+#                           для claude.ai, приложения Claude и Skills API.
+# Почему два. claude.ai требует папку навыка в корне («The ZIP should contain the skill
+# folder as its root») и допускает в шапке только name, description, license,
+# compatibility, metadata, allowed-tools — на when_to_use загрузка падает с «Unexpected
+# key(s) in SKILL.md frontmatter». А when_to_use нужен Claude Code при отборе навыка,
+# поэтому в исходнике он остаётся, а вырезается только в архиве для Claude
+# (урок vault when-to-use-breaks-claude-ai-upload, 02.11.2026).
 #
 # В архивы НЕ кладётся:
 #   .DS_Store и служебные двойники Finder (`._имя`, `__MACOSX`);
@@ -33,7 +42,10 @@ PREDEL_FAJLOV = 100       # потолок числа файлов на архи
 PREDEL_OPISANIYA = 1024   # потолок длины description, В БАЙТАХ
 ZA_OTPRAVKU = 5           # сколько файлов Perplexity принимает за один раз
 VYHOD = "zip"
+VYHOD_CLAUDE = "zip/claude"
 MUSOR = {".DS_Store", "Thumbs.db", "desktop.ini", "__MACOSX"}
+# Поля шапки, которые принимают claude.ai, Skills API и package_skill.py.
+POLYA_CLAUDE = {"name", "description", "license", "compatibility", "metadata", "allowed-tools"}
 
 # Про байты. Perplexity меряет description байтами, а не знаками: в отказе виден
 # Go-сервис, а там len(строки) — длина в байтах. Кириллица в UTF-8 весит два байта
@@ -65,8 +77,21 @@ def polya_shapki(put):
         return m.group(1).strip().strip('"') if m else ""
     return pole("description"), pole("when_to_use")
 
+def shapka_dlya_claude(imya, tekst):
+    """SKILL.md для claude.ai: без when_to_use; None и замечание, если шапка не годится."""
+    tekst = re.sub(r"(?m)^when_to_use:.*\n", "", tekst, count=1)
+    shapka = re.match(r"^---\n(.*?)\n---\n", tekst, re.S)
+    polya = set(re.findall(r"(?m)^([A-Za-z][\w-]*):", shapka.group(1)))
+    lishnie = sorted(polya - POLYA_CLAUDE)
+    if lishnie:
+        zamechanie(f"   {imya}: поля {', '.join(lishnie)} не примет claude.ai; "
+                   f"архив для Claude не собран")
+        return None
+    return tekst
+
+
 shutil.rmtree(VYHOD, ignore_errors=True)
-os.makedirs(VYHOD)
+os.makedirs(VYHOD_CLAUDE)
 
 navyki = sorted(d for d in os.listdir("skills")
                 if os.path.isfile(f"skills/{d}/SKILL.md"))
@@ -108,6 +133,21 @@ for imya in navyki:
         for f in fajly:
             z.write(f, os.path.relpath(f, katalog))
 
+    skill_claude = shapka_dlya_claude(imya, open(f"{katalog}/SKILL.md", encoding="utf-8").read())
+    if skill_claude is not None:
+        with zipfile.ZipFile(os.path.join(VYHOD_CLAUDE, imya + ".zip"), "w",
+                             zipfile.ZIP_DEFLATED) as z:
+            for f in fajly:
+                put = os.path.join(imya, os.path.relpath(f, katalog))
+                if os.path.relpath(f, katalog) == "SKILL.md":
+                    # дата — из исходного файла, а не «сейчас»: иначе архив меняется
+                    # при каждой сборке и шумит в git
+                    info = zipfile.ZipInfo.from_file(f, put)
+                    info.compress_type = zipfile.ZIP_DEFLATED
+                    z.writestr(info, skill_claude)
+                else:
+                    z.write(f, put)
+
     vesit = os.path.getsize(arhiv)
     razmer = f"{vesit/1024:.0f}K" if vesit < 1024**2 else f"{vesit/1024**2:.1f}M"
     print(f"{imya:<20}{len(fajly):>8}{razmer:>9}{bajt:>10}{len(klyuchi.encode()):>8}")
@@ -123,7 +163,7 @@ for imya in navyki:
 zahodov = (len(navyki) + ZA_OTPRAVKU - 1) // ZA_OTPRAVKU
 print()
 print(f"Готово. {VYHOD}/ — {len(navyki)} архивов. В Perplexity грузить "
-      f"{zahodov} заходами по {ZA_OTPRAVKU}."
+      f"{zahodov} заходами по {ZA_OTPRAVKU}. Для claude.ai — {VYHOD_CLAUDE}/."
       if zamechaniy == 0 else f"Замечаний: {zamechaniy}.")
 sys.exit(1 if zamechaniy else 0)
 PY
